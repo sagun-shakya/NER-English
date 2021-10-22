@@ -11,30 +11,30 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 class BilSTM_model(nn.Module):
     def __init__(self, vocab_size, embedding_dim, hidden_dim, dropout_prob, max_len, num_tags, batch_size):
         super(BilSTM_model, self).__init__()
-
-        self.batch_size = batch_size
-        self.max_len = max_len        
+        
+        self.vocab_size = vocab_size
+        self.embedding_dim = embedding_dim
         self.hidden_dim = hidden_dim
+        self.dropout_prob = dropout_prob
+        self.max_len = max_len    
+        self.num_tags = num_tags
+        self.batch_size = batch_size
 
-        #self.dropout_prob = dropout_prob
-        #self.num_tags = num_tags
-        #self.embedding_dim = embedding_dim
-
-        self.word_embeddings = nn.Embedding(num_embeddings = vocab_size, embedding_dim = embedding_dim)
+        self.word_embeddings = nn.Embedding(num_embeddings = self.vocab_size, embedding_dim = self.embedding_dim)
 
         #### TO USE A SET OF PRE-TRAINED EMBEDDINGS. ####
         # self.word_embeddings.weight = nn.Parameter(torch.tensor(embedding_matrix, dtype=torch.float32))
         # self.word_embeddings.weight.requires_grad = False
 
-        self.dropout_emb = nn.Dropout(dropout_prob)
-        self.bilstm = nn.LSTM(input_size = embedding_dim, 
-                              hidden_size = hidden_dim,
+        self.dropout_emb = nn.Dropout(self.dropout_prob)
+        self.bilstm = nn.LSTM(input_size = self.embedding_dim, 
+                              hidden_size = self.hidden_dim,
                               dropout = 0.1, 
                               bias = True,  
                               bidirectional = True, 
                               batch_first = True)
 
-        self.linear = nn.Linear(hidden_dim*2, num_tags)
+        self.linear = nn.Linear(self.hidden_dim*2, self.num_tags)
 
     def forward(self, sentence, seq_len):
 
