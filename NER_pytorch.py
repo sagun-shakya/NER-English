@@ -100,8 +100,8 @@ Y = [F.pad(tensor_i, pad = (0, MAX_LEN - len(tensor_i)), mode = "constant", valu
 x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=1)
 
 # Creating training and testing iterators.
-train_loader = DataLoader(NERDataset(x_train, y_train), batch_size = BATCH_SIZE, shuffle=True)
-test_loader = DataLoader(NERDataset(x_test, y_test), batch_size = BATCH_SIZE, shuffle=True)
+train_loader = DataLoader(NERDataset(x_train, y_train, pad_id), batch_size = BATCH_SIZE, shuffle=True)
+test_loader = DataLoader(NERDataset(x_test, y_test, pad_id), batch_size = BATCH_SIZE, shuffle=True)
 
 # Model Architecture.
 model = BilSTM_model(VOCAB_SIZE, EMBEDDING_DIM, HIDDEN_DIM, DROPOUT_PROB, MAX_LEN, num_tags, BATCH_SIZE)
@@ -109,17 +109,28 @@ model = BilSTM_model(VOCAB_SIZE, EMBEDDING_DIM, HIDDEN_DIM, DROPOUT_PROB, MAX_LE
     
 # Training Phase.
 
+# Cache for accuracy and losses in each epoch for training and validatin sets.
+accuracy_cache_train = {"epoch_" + str(ii) : [] for ii in range(EPOCHS)}
+accuracy_cache_val = {"epoch_" + str(ii) : [] for ii in range(EPOCHS)}
+
+loss_cache_train = {"epoch_" + str(ii) : [] for ii in range(EPOCHS)}
+loss_cache_val= {"epoch_" + str(ii) : [] for ii in range(EPOCHS)}
+
 # Defining the parameters of the network.
 optimizer = Adam(model.parameters(), lr = 0.001)
 
 # Start  training.
 for ee in range(EPOCHS):
-    training_loss_per_epoch = 0
-    training_accuracy_per_epoch = 0
-
-    val_loss_per_epoch = 0
-    val_accuracy_per_epoch = 0
-
+    
+    # Empty lists for storing the train/validation accuracy and losses for each iteration in the ee-th epoch.
+    # These will be stored in the dictionary containing the cache for each epoch.
+    
+    accuracy_train = []
+    accuracy_val = []
+    
+    loss_train = []
+    loss_val = []
+    
     for ii, ((sample, seq_len), tag) in enumerate(train_loader):
         # Clear the gradients.
         model.zero_grad()
@@ -135,7 +146,7 @@ for ee in range(EPOCHS):
         # Preventing the <pad> element from contributing to the loss.
         loss = F.nll_loss(preds, tag, ignore_index = tag2idx['<pad>'])
         loss_rounded = round(loss.item(), 4)
-        print(f"\nLoss value in this iteration (Epoch : {ee} & Batch : {ii}): {loss_rounded}")
+        #print(f"\nLoss value in this iteration (Epoch : {ee} & Batch : {ii}): {loss_rounded}")
 
         # Backpropagation.
         loss.backward()
@@ -144,10 +155,63 @@ for ee in range(EPOCHS):
         optimizer.step()
 
         # Categorical Accuracy.
-        train_acc_per_batch = utils.categorical_accuracy(preds, tag, tag_pad_value = tag2idx['<pad>'])
-        print(f"Accuracy in this iteration (Epoch : {ee} & Batch : {ii}): {train_acc_per_batch}")
+        train_acc_per_iter = utils.categorical_accuracy(preds, tag, tag_pad_value = tag2idx['<pad>'])
+        #print(f"Accuracy in this iteration (Epoch : {ee} & Batch : {ii}): {train_acc_per_iter}")
 
-        ##break
+        # Calculate the loss and accuracy for the validation set in every 50 iteration.
+        if (ii + 1) % 50 == 0:
+            avg_train_accuracy = []
+            avg_val_accuracy = []
+            
+            avg_train_loss = []
+            avg_val_loss = []
+            
+            for (sample_t, seq_len_t), tag_t in test_loader:
+                
+                # Forward Propagation.
+                preds_val = model.forward(sample_t, seq_len_t)
+                
+                # Calculate the loss.
+                val_loss_per_batch = F.nll_loss(preds_val, tag_t, ignore_index = tag2idx['<pad>'])
+                val_loss_per_batch = round(val_loss_per_batch.item(), 4)
+                
+                # Calculating the accuracy.
+                val_accuracy_per_batch = utils.categorical_accuracy(preds_val, tag_t, tag_pad_value = tag2idx['<pad>'])
+                
+                # Storing the losses and accuracies for validation batches (NOT THE TRAINING BATCH) in this iteration.
+                ## Validation Set.
+                avg_val_accuracy.append(val_accuracy_per_batch)
+                avg_val_loss.append(val_loss_per_batch)
+            
+            ## Train Set.
+            ### Stores the training accuracy and loss for the 50th, 100th, ..., (50*n)th iteration only. 
+            avg_train_accuracy.append(train_acc_per_iter)
+            avg_train_loss.append(loss_rounded)
 
+            # Calculating the average loss for the valdation set in this iteration.
+            compute_average = lambda arr: sum(arr) / len(arr)
+            
+            avg_val_accuracy = compute_average(avg_val_accuracy)
+            avg_val_loss = compute_average(avg_val_loss)
+            
+            # Verbose.
+            epoch_step_info = f"Epoch [{ee} / {EPOCHS}], Step [{ii} / {len(train_loader)}], "
+            loss_info = f"Training Loss: {avg_train_loss[0]:.4f}, Validation loss: {avg_val_loss:.4f}, "
+            accuracy_info = f"Training Accuracy: {avg_train_accuracy[0]:.4f}, Validation Accuracy: {avg_val_accuracy:.4f},"
+            print(epoch_step_info + loss_info + accuracy_info)
+            
+        if ii == 200:
+            break
+        
+    # Storing the cache for this epoch into the dictionaries above.
+    
+    # Train Set.
+    accuracy_cache_train['epoch_' + str(ee)] = avg_train_accuracy
+    loss_cache_train['epoch_' + str(ee)] = avg_train_loss
+    
+    # Validation Set.
+    accuracy_cache_val['epoch_' + str(ee)] = avg_val_accuracy
+    loss_cache_val['epoch_' + str(ee)] = avg_val_loss
+    
     break
-
+    
