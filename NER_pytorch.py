@@ -173,7 +173,7 @@ for ee in range(EPOCHS):
                 
                 # Calculate the loss.
                 val_loss_per_batch = F.nll_loss(preds_val, tag_t, ignore_index = tag2idx['<pad>'])
-                val_loss_per_batch = round(val_loss_per_batch.item(), 4)
+                val_loss_per_batch = val_loss_per_batch.item()
                 
                 # Calculating the accuracy.
                 val_accuracy_per_batch = utils.categorical_accuracy(preds_val, tag_t, tag_pad_value = tag2idx['<pad>'])
@@ -197,11 +197,11 @@ for ee in range(EPOCHS):
             # Verbose.
             epoch_step_info = f"Epoch [{ee} / {EPOCHS}], Step [{ii} / {len(train_loader)}], "
             loss_info = f"Training Loss: {avg_train_loss[0]:.4f}, Validation loss: {avg_val_loss:.4f}, "
-            accuracy_info = f"Training Accuracy: {avg_train_accuracy[0]:.4f}, Validation Accuracy: {avg_val_accuracy:.4f},"
+            accuracy_info = f"Training Accuracy: {avg_train_accuracy[0]:.4f}, Validation Accuracy: {avg_val_accuracy:.4f}"
             print(epoch_step_info + loss_info + accuracy_info)
             
-        if ii == 200:
-            break
+        #if ii == 200:
+            #break
         
     # Storing the cache for this epoch into the dictionaries above.
     
