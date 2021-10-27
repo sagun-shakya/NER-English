@@ -93,7 +93,7 @@ unpadded_tags = list(map(torch.tensor, unpadded_tags))
 # Maximum length for padding is 50.
 # If length of a tensor exceeds 50, it'll be post-truncated.
 X = [F.pad(tensor_i, pad = (0, MAX_LEN - len(tensor_i)), mode = "constant", value = pad_id) for tensor_i in unpadded_sequences]
-Y = [F.pad(tensor_i, pad = (0, MAX_LEN - len(tensor_i)), mode = "constant", value = tag2idx['<pad>']) for tensor_i in unpadded_tags]
+Y = [F.pad(tensor_i, pad = (0, MAX_LEN - len(tensor_i)), mode = "constant", value = tag_pad_id) for tensor_i in unpadded_tags]
 
 # Train-Test split in the ratio 4:1.
 x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=1)
@@ -124,11 +124,10 @@ optimizer = Adam(model.parameters(), lr = 0.001)
 early_stopping = EarlyStopping(patience = PATIENCE, verbose = True, delta = 0.0001)
 
 # Start  training.
-for ee in range(EPOCHS):
+for ee in range(EPOCHS):    
     
     # Empty lists for storing the train/validation accuracy and losses for each iteration in the ee-th epoch.
-    # These will be stored in the dictionary containing the cache for each epoch.
-    
+    # These will be stored in the dictionary containing the cache for each epoch.    
     accuracy_train = []
     accuracy_val = []
     
@@ -171,8 +170,7 @@ for ee in range(EPOCHS):
             avg_train_loss = []
             avg_val_loss = []
             
-            for (sample_t, seq_len_t), tag_t in test_loader:
-                
+            for (sample_t, seq_len_t), tag_t in test_loader:               
                 # Forward Propagation.
                 preds_val = model.forward(sample_t, seq_len_t)
                 
