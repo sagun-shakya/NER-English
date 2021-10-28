@@ -37,7 +37,7 @@ MAX_LEN = 50
 EMBEDDING_DIM = 50
 HIDDEN_DIM = 100
 DROPOUT_PROB = 0.1
-BATCH_SIZE = 8
+BATCH_SIZE = 32
 EPOCHS = 3
 PATIENCE = 5
 #-------------------------------------------------#
@@ -121,6 +121,4 @@ history = dynamic_model.fit(train_loader,
                             early_stopping_callback = early_stopping, 
                             return_cache = True, 
                             plot_history = True)
-
-
  #---------------------------------------------------------------#   
