@@ -142,8 +142,8 @@ class DynamicModel:
             training_loss_per_epoch_list = [*loss_cache_train.values()]
             val_loss_per_epoch_list = [*loss_cache_val.values()]
 
-            training_accuracy_per_epoch_list = [*accuracy_cache_train]
-            val_accuracy_per_epoch_list = [*accuracy_cache_val]
+            training_accuracy_per_epoch_list = [*accuracy_cache_train.values()]
+            val_accuracy_per_epoch_list = [*accuracy_cache_val.values()]
 
             ax = utils.plot_history_object(
                 training_loss_per_epoch_list, 
